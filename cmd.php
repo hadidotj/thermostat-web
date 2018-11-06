@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-$s=fsockopen('192.168.1.3',44147,$errnum,$errstr,5) ;
+$s=fsockopen('192.168.1.200',44147,$errnum,$errstr,5) ;
 if($s!==FALSE) {
 	fwrite($s, $_GET['cmd']);
     while(!feof($s)) {
