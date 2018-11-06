@@ -1,0 +1,234 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<title>Thermostat Control</title>
+		<link rel="stylesheet" href="css/foundation.min.css">
+		<style>
+body * { -webkit-user-select: none; user-select: none; }
+#err-div { position: fixed; width: 100%; bottom: 0; left: 0; z-index: 100; }
+#err-div div { padding: 10px; border-radius: 5px; }
+#err-div div span { float: right; width: 20px; height: 20px; font-size: 0.75rem; font-weight: bold; margin-top: 3px; text-align: center; border-radius: 50%; }
+#err-div .err { color: #991b1b; background-color: #fddede; border: 1px solid #991b1b; }
+#err-div .err span { color: #991b1b; border: 1px solid #991b1b; }
+#err-div .warn { color: #aa8d00; background-color: #fdf5de; border: 1px solid #aa8d00; }
+#err-div .warn span { color: #aa8d00; border: 1px solid #aa8d00; }
+#err-div .info { color: #005caa; background-color: #e7f1fd; border: 1px solid #005caa; }
+#err-div .info span { color: #005caa; border: 1px solid #005caa; }
+.v-btn-grp button, .btn-grp button {
+	width: 100px;
+	height: 50px;
+	background-color: #eee;
+	border: 1px solid #ccc;
+	box-shadow: inset 0 0 5px #ccc;
+	box-sizing: border-box;
+	padding: 0;
+	margin: 0;
+	line-spacing: 0;
+}
+.v-btn-grp button { display: block; }
+.v-btn-grp button[disabled], .btn-grp button[disabled] { background-color: #ddd; }
+.v-btn-grp button:first-of-type  { border-radius: 10px 10px 0 0; }
+.v-btn-grp button:not(:first-of-type) { border-radius: 0; border-top: 0; }
+.v-btn-grp button:last-of-type { border-radius: 0 0 10px 10px; }
+.btn-grp button:first-of-type  { border-radius: 10px 0 0 10px; }
+.btn-grp button:not(:first-of-type) { border-radius: 0; border-left: 0; }
+.btn-grp button:last-of-type { border-radius: 0 10px 10px 0; }
+.status { margin: 20px 0 0; text-align: center; }
+.status h1 { margin: 0 0 10px; }
+.status h3 { margin: 0; }
+.status p { margin: 0; font-size: 0.75rem }
+.status img { width: 15px; height: 15px; filter: alpha(opacity=20); opacity: 0.2; }
+.status img.on { filter: alpha(opacity=100); opacity: 1.0; }
+.offsets { color: #999; font-size: 0.75rem; }
+.setTmp span { display: block; width: 24px; height: 24px; border: 5px solid #000; transform: rotate(45deg); }
+#up span { margin: 15px auto 0; border-right: 0; border-bottom: 0; }
+#down span { margin: -5px auto 0; border-left: 0; border-top: 0; }
+#roomInfo { position: absolute; top: 0; left: 0; width: 100%; height: 33%; display: none; padding: 5px; }
+#roomInfo .content { width: 100%; height: 100%; background-color: #fff; padding: 15px; border: 1px solid #000; box-sizing: border-box; }
+#roomInfo .header { font-weight: bold; }
+#roomInfo .close { position: absolute; top: 20px; right: 20px; width: 20px; height:20px; font-size: 0.75rem; font-weight: bold; text-align: center; border-radius: 50%; border: 1px solid #000; }
+		</style>
+		<script src="js/jquery.min.js"></script>
+		<script>
+		
+			var msg = {
+				msg: function(msg, type) {
+					var errDiv = $('#err-div');
+					if(errDiv.find('div').length >= 3) {
+						errDiv.find('div:last-child').remove();
+					}
+					
+					type = type || 'err';
+					var timeout = null;
+					var div = $('<div class="' + type + '">' + msg + '<span>x</span></div>').prependTo(errDiv);
+					div.find('span').click(function() {
+						clearTimeout(timeout);
+						div.remove();
+					});
+					timeout = setTimeout(function() {
+						div.remove();
+					}, 5000);
+				},
+				err: function(msg) { this.msg(msg,'err'); },
+				warn: function(msg) { this.msg(msg,'warn'); },
+				info: function(msg) { this.msg(msg,'info'); }
+			};
+			
+			var setTmp = null, offset = null;
+			var checkStatus = function() {
+				$.ajax({
+					method: 'GET',
+					url: 'cmd.php?cmd=status',
+					success: function(status) {
+						if(status.fan) {
+							$('#fan-icon').addClass('on');
+							$('#fan-auto').attr('disabled', false);
+							$('#fan-on').attr('disabled', true);
+						} else {
+							$('#fan-icon').removeClass('on');
+							$('#fan-auto').attr('disabled', true);
+							$('#fan-on').attr('disabled', false);
+						}
+						if(status.cool) {
+							$('#cool-icon').addClass('on');
+						} else {
+							$('#cool-icon').removeClass('on');
+						}
+						if(status.heat) {
+							$('#heat-icon').addClass('on');
+						} else {
+							$('#heat-icon').removeClass('on');
+						}
+						if(status.avgTmp) {
+							$('#avgTmp').html((Math.floor(status.avgTmp*100)/100).toFixed(2));
+						}
+						if(status.settings.setTmp) {
+							setTmp = status.settings.setTmp
+							offset = status.settings.offset;
+							$('#setTmp').html((Math.floor(setTmp*100)/100).toFixed(2));
+							$('#lowerOffset').html((Math.floor((setTmp-offset)*100)/100).toFixed(2) + "&deg;F");
+							$('#upperOffset').html((Math.floor((setTmp+offset)*100)/100).toFixed(2) + "&deg;F");
+						}
+						if(status.settings.mode) {
+							var modes = $('.mode');
+							modes.find('button').attr('disabled', false);
+							modes.find('#mode-' + status.settings.mode.toLowerCase()).attr('disabled', true);
+						}
+						if(status.rooms) {
+							var roomDiv = $('#roomInfo .info');
+							var body = '<div class="row header">' +
+								'<div class="column small-4">Name</div>' +
+								'<div class="column small-4">Temp</div>' +
+								'<div class="column small-4">Humidity</div>' +
+								'</div>';
+							$.each(status.rooms, function(name, room) {
+								body += '<div class="row">' +
+									'<div class="column small-4">' + name + '</div>' +
+									'<div class="column small-4">' + room[0] + '&deg;F</div>' +
+									'<div class="column small-4">' + room[1]+ '%</div>' +
+									'</div>';
+							});
+							roomDiv.html(body);
+						}
+					}, error: function(xhr, text) {
+						msg.err('Status update failed: ' + tezt);
+					}
+				 });
+			};
+			checkStatus();
+			setInterval(checkStatus, 5000);
+			
+			var sendCmd = function(cmd) {
+				$.ajax({
+					method: 'GET',
+					url: 'cmd.php?cmd=' + cmd,
+					dataType: 'text',
+					success: function(resp) {
+						msg.info(resp);
+					},
+					error: function(xhr, text) {
+						msg.err('CMD Failed: ' + text);
+					}
+				});
+			};
+			
+			$(document).ready(function() {
+				$('.fan button').click(function() {
+					var isAuto = this.id.indexOf('auto') !== -1;
+					sendCmd(isAuto ? 'fanoff' : 'fanon');
+					$('#fan-on').attr('disabled', !isAuto);
+					$('#fan-auto').attr('disabled', isAuto);
+				});
+				$('.mode button').click(function() {
+					var newMode = this.id.substring(5);
+					sendCmd('mode,' + newMode.toUpperCase());
+					var modes = $('.mode');
+					modes.find('button').attr('disabled', false);
+					modes.find('#mode-' + newMode).attr('disabled', true);
+				});
+				$('.setTmp button').click(function() {
+					if(setTmp) {
+						setTmp += (this.id.indexOf('up') !== -1) ? 0.5: -0.5;
+						sendCmd('setTmp,' + setTmp);
+						$('#setTmp').html((Math.floor(setTmp*100)/100).toFixed(2));
+						$('#lowerOffset').html((Math.floor((setTmp-offset)*100)/100).toFixed(2) + "&deg;F");
+						$('#upperOffset').html((Math.floor((setTmp+offset)*100)/100).toFixed(2) + "&deg;F");
+					}
+				});
+				$('#avgTmp').click(function() {
+					$('#roomInfo').show();
+				});
+				$('#roomInfo .close').click(function() {
+					$('#roomInfo').hide();
+				});
+			});
+		</script>
+	</head>
+	<body>
+		<div id="err-div"></div>
+		<div class="row status">
+			<div class="column small-7">
+				<div class="row">
+					<div class="column small-3 small-offset-2">
+						<img id="fan-icon" src="img/fan.png"/>
+					</div>
+					<div class="column small-3">
+						<img id="cool-icon" src="img/cool.png"/>
+					</div>
+					<div class="column small-3 last">
+						<img id="heat-icon" src="img/heat.png"/>
+					</div>
+				</div>
+				<h1><span id="avgTmp">--.-</span>&deg;F</h1>
+				<div class="row offsets">
+					<div id="lowerOffset" class="column small-4 small-offset-1">--.--&deg;F</div>
+					<div id="upperOffset"  class="column small-4 small-offset-2 last">--.--&deg;F</div>
+				</div>
+				<h3><span id="setTmp">--.-</span>&deg;F</h3>
+			</div>
+			<div class="column small-5 v-btn-grp setTmp">
+				<button id="up"><span></span></button>
+				<button id="down"><span></span></button>
+			</div>
+		</div>
+		<div class="row">
+			<div class="column small-12 btn-grp fan">
+				<h2>Fan</h2>
+				<button id="fan-auto" class="active" disabled>Auto</button><button id="fan-on">On</button>
+			</div>
+		</div>
+		<div class="row">
+			<div class="column small-12 btn-grp mode">
+				<h2>Mode</h2>
+				<button id="mode-off" class="active" disabled>Off</button><button id="mode-heat">Heat</button><button id="mode-cool">Cool</button>
+			</div>
+		</div>
+		<div id="roomInfo">
+			<div class="content">
+				<div class="info"></div>
+				<div class="close">x</div>
+			</div>
+		</div>
+	</body>
+</html>
