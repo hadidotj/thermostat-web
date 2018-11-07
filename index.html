@@ -123,6 +123,7 @@ body * { -webkit-user-select: none; user-select: none; }
 								'<div class="column small-4">Humidity</div>' +
 								'</div>';
 							$.each(status.rooms, function(name, room) {
+								name = status.settings.roomnames[name] || name;
 								body += '<div class="row">' +
 									'<div class="column small-4">' + name + '</div>' +
 									'<div class="column small-4">' + room[0] + '&deg;F</div>' +
