@@ -117,17 +117,20 @@ body * { -webkit-user-select: none; user-select: none; }
 						}
 						if(status.rooms) {
 							var roomDiv = $('#roomInfo .info');
+							var time = Math.floor((new Date()).getTime()/1000);
 							var body = '<div class="row header">' +
-								'<div class="column small-4">Name</div>' +
-								'<div class="column small-4">Temp</div>' +
-								'<div class="column small-4">Humidity</div>' +
+								'<div class="column small-3">Name</div>' +
+								'<div class="column small-3">Temp</div>' +
+								'<div class="column small-3">Humid</div>' +
+								'<div class="column small-3">Time</div>' +
 								'</div>';
 							$.each(status.rooms, function(name, room) {
 								name = status.settings.roomnames[name] || name;
 								body += '<div class="row">' +
-									'<div class="column small-4">' + name + '</div>' +
-									'<div class="column small-4">' + room[0] + '&deg;F</div>' +
-									'<div class="column small-4">' + room[1]+ '%</div>' +
+									'<div class="column small-3">' + name + '</div>' +
+									'<div class="column small-3">' + (room[0]!=='0' ? room[0] : '-') + '&deg;F</div>' +
+									'<div class="column small-3">' + (room[1]!=='0' ? room[1] : '-') + '%</div>' +
+									'<div class="column small-3">' + (time-Math.floor(room[2])) + '</div>' +
 									'</div>';
 							});
 							roomDiv.html(body);
