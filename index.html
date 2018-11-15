@@ -75,40 +75,58 @@ body * { -webkit-user-select: none; user-select: none; }
 				info: function(msg) { this.msg(msg,'info'); }
 			};
 			
+			var formatFloat = function(num) {
+				return (Math.floor(num*100)/100).toFixed(2);
+			};
+			
+			var formatTime = function(time) {
+				var min = time > 60 ? Math.floor(time/60) : 0;
+				var sec = Math.floor(time%60);
+				return min + ':' + sec;
+			};
+			
 			var setTmp = null, offset = null;
 			var checkStatus = function() {
 				$.ajax({
 					method: 'GET',
 					url: 'cmd.php?cmd=status',
 					success: function(status) {
-						if(status.fan) {
+						var time = Math.floor((new Date()).getTime()/1000);
+						
+						if(status.fan.running) {
 							$('#fan-icon').addClass('on');
+							$('#fan-time').html(time-status.fan.time);
 							$('#fan-auto').attr('disabled', false);
 							$('#fan-on').attr('disabled', true);
 						} else {
 							$('#fan-icon').removeClass('on');
+							$('#fan-time').html('');
 							$('#fan-auto').attr('disabled', true);
 							$('#fan-on').attr('disabled', false);
 						}
-						if(status.cool) {
+						if(status.cool.running) {
 							$('#cool-icon').addClass('on');
+							$('#cool-time').html(time-status.cool.time);
 						} else {
 							$('#cool-icon').removeClass('on');
+							$('#cool-time').html('');
 						}
-						if(status.heat) {
+						if(status.heat.running) {
 							$('#heat-icon').addClass('on');
+							$('#heat-time').html(formatTime(time-status.heat.time));
 						} else {
 							$('#heat-icon').removeClass('on');
+							$('#heat-time').html('');
 						}
 						if(status.avgTmp) {
-							$('#avgTmp').html((Math.floor(status.avgTmp*100)/100).toFixed(2));
+							$('#avgTmp').html(formatFloat(status.avgTmp));
 						}
 						if(status.settings.setTmp) {
 							setTmp = status.settings.setTmp
 							offset = status.settings.offset;
-							$('#setTmp').html((Math.floor(setTmp*100)/100).toFixed(2));
-							$('#lowerOffset').html((Math.floor((setTmp-offset)*100)/100).toFixed(2) + "&deg;F");
-							$('#upperOffset').html((Math.floor((setTmp+offset)*100)/100).toFixed(2) + "&deg;F");
+							$('#setTmp').html(formatFloat(setTmp));
+							$('#lowerOffset').html(formatFloat(setTmp-offset) + "&deg;F");
+							$('#upperOffset').html(formatFloat(setTmp+offset) + "&deg;F");
 						}
 						if(status.settings.mode) {
 							var modes = $('.mode');
@@ -117,7 +135,6 @@ body * { -webkit-user-select: none; user-select: none; }
 						}
 						if(status.rooms) {
 							var roomDiv = $('#roomInfo .info');
-							var time = Math.floor((new Date()).getTime()/1000);
 							var body = '<div class="row header">' +
 								'<div class="column small-3">Name</div>' +
 								'<div class="column small-3">Temp</div>' +
@@ -128,8 +145,8 @@ body * { -webkit-user-select: none; user-select: none; }
 								name = status.settings.roomnames[name] || name;
 								body += '<div class="row">' +
 									'<div class="column small-3">' + name + '</div>' +
-									'<div class="column small-3">' + (room[0]!=='0' ? room[0] : '-') + '&deg;F</div>' +
-									'<div class="column small-3">' + (room[1]!=='0' ? room[1] : '-') + '%</div>' +
+									'<div class="column small-3">' + formatFloat(room[0]!=='0' ? room[0] : '-') + '&deg;F</div>' +
+									'<div class="column small-3">' + formatFloat(room[1]!=='0' ? room[1] : '-') + '%</div>' +
 									'<div class="column small-3">' + (time-Math.floor(room[2])) + '</div>' +
 									'</div>';
 							});
@@ -194,14 +211,14 @@ body * { -webkit-user-select: none; user-select: none; }
 		<div class="row status">
 			<div class="column small-7">
 				<div class="row">
-					<div class="column small-3 small-offset-2">
-						<img id="fan-icon" src="img/fan.png"/>
+					<div class="column small-4">
+						<img id="fan-icon" src="img/fan.png"/><span id="fan-time"></span>
 					</div>
-					<div class="column small-3">
-						<img id="cool-icon" src="img/cool.png"/>
+					<div class="column small-4">
+						<img id="cool-icon" src="img/cool.png"/><span id="cool-time"></span>
 					</div>
-					<div class="column small-3 last">
-						<img id="heat-icon" src="img/heat.png"/>
+					<div class="column small-4">
+						<img id="heat-icon" src="img/heat.png"/><span id="heat-time"></span>
 					</div>
 				</div>
 				<h1><span id="avgTmp">--.-</span>&deg;F</h1>
