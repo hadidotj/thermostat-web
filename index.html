@@ -80,9 +80,9 @@ body * { -webkit-user-select: none; user-select: none; }
 			};
 			
 			var formatTime = function(time) {
-				var min = time > 60 ? Math.floor(time/60) : 0;
+				var min = time >= 60 ? Math.floor(time/60) : 0;
 				var sec = Math.floor(time%60);
-				return min + ':' + sec;
+				return min + ':' + (sec<10?'0'+sec:sec);
 			};
 			
 			var setTmp = null, offset = null;
@@ -212,13 +212,13 @@ body * { -webkit-user-select: none; user-select: none; }
 			<div class="column small-7">
 				<div class="row">
 					<div class="column small-4">
-						<img id="fan-icon" src="img/fan.png"/><span id="fan-time"></span>
+						<img id="fan-icon" src="img/fan.png"/><br><span id="fan-time"></span>
 					</div>
 					<div class="column small-4">
-						<img id="cool-icon" src="img/cool.png"/><span id="cool-time"></span>
+						<img id="cool-icon" src="img/cool.png"/><br><span id="cool-time"></span>
 					</div>
 					<div class="column small-4">
-						<img id="heat-icon" src="img/heat.png"/><span id="heat-time"></span>
+						<img id="heat-icon" src="img/heat.png"/><br><span id="heat-time"></span>
 					</div>
 				</div>
 				<h1><span id="avgTmp">--.-</span>&deg;F</h1>
