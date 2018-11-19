@@ -37,7 +37,6 @@ $sdata = [];
 $tavg = new AVG();
 $bounds = [0,0];
 $hourAgo = time()-3600;
-$hourAgo = 1542532804;
 foreach($sensors as $sensor) {
 	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time DESC';
 	$ret = $db->query($q);
