@@ -48,8 +48,11 @@ body * { -webkit-user-select: none; user-select: none; }
 #roomInfo .content { width: 100%; height: 100%; background-color: #fff; padding: 15px; border: 1px solid #000; box-sizing: border-box; }
 #roomInfo .header { font-weight: bold; }
 #roomInfo .close { position: absolute; top: 20px; right: 20px; width: 20px; height:20px; font-size: 0.75rem; font-weight: bold; text-align: center; border-radius: 50%; border: 1px solid #000; }
+.history { text-align: center; }
+#history-btn { border-radius: 10px; }
 		</style>
 		<script src="js/jquery.min.js"></script>
+		<script src="js/Chart.bundle.min.js"></script>
 		<script>
 		
 			var msg = {
@@ -85,7 +88,7 @@ body * { -webkit-user-select: none; user-select: none; }
 				return min + ':' + (sec<10?'0'+sec:sec);
 			};
 			
-			var setTmp = null, offset = null;
+			var setTmp = null, offset = null, roomnames = null;
 			var checkStatus = function() {
 				$.ajax({
 					method: 'GET',
@@ -134,6 +137,8 @@ body * { -webkit-user-select: none; user-select: none; }
 							modes.find('#mode-' + status.settings.mode.toLowerCase()).attr('disabled', true);
 						}
 						if(status.rooms) {
+							roomnames = status.settings.roomnames;
+							
 							var roomDiv = $('#roomInfo .info');
 							var body = '<div class="row header">' +
 								'<div class="column small-3">Name</div>' +
@@ -142,7 +147,7 @@ body * { -webkit-user-select: none; user-select: none; }
 								'<div class="column small-3">Time</div>' +
 								'</div>';
 							$.each(status.rooms, function(name, room) {
-								name = status.settings.roomnames[name] || name;
+								name = roomnames[name] || name;
 								body += '<div class="row">' +
 									'<div class="column small-3">' + name + '</div>' +
 									'<div class="column small-3">' + formatFloat(room[0]!=='0' ? room[0] : '-') + '&deg;F</div>' +
@@ -203,6 +208,96 @@ body * { -webkit-user-select: none; user-select: none; }
 				$('#roomInfo .close').click(function() {
 					$('#roomInfo').hide();
 				});
+				$('#history-btn').click(function() {
+					$.ajax({
+						type: 'GET',
+						url: 'history.php',
+						success: function(hist) {
+							var colors = (function() {
+								var i = 0;
+								var c = [
+									'rgb(54, 162, 235)',
+									'rgb(153, 102, 255)',
+									'rgb(255, 99, 132)',
+									'rgb(255, 159, 64)',
+									'rgb(255, 205, 86)',
+									'rgb(75, 192, 192)'
+								];
+								return {next: function() {
+									return c[i++%c.length];
+								}};
+							})();
+							var datasets = [];
+							for(var i in hist.sensors) {
+								var s = hist.sensors[i];
+								var color = colors.next();
+								datasets.push({
+									label: (roomnames[s.id] || s.id) + ' | ' + formatFloat(s.avg) + 'F',
+									backgroundColor: color,
+									borderColor: color,
+									fill: false,
+									data: s.data
+								});
+							}
+							var relayColor = {
+								'FAN': 'rgba(75, 192, 192, 0.5)',
+								'HEAT': 'rgba(255, 99, 132, 0.25)',
+								'COOL': 'rgba(255, 205, 86, 0.25)'
+							};
+							for(var i in hist.relays) {
+								var r = hist.relays[i];
+								datasets.push({
+									label: r.id + ' | ' + r.cnt + ' | ' + formatTime(r.avg) + ' | ' + formatTime(r.run),
+									backgroundColor: relayColor[r.id],
+									borderColor: relayColor[s.id],
+									fill: 'start',
+									data: r.data
+								});
+							}
+							new Chart('history', {
+								type: 'line',
+								data: {
+									datasets: datasets
+								},
+								options: {
+									title: {
+										text:'Temps Last Hour | ' + formatFloat(hist.tavg) + 'F | ' +
+											hist.cnt + ' | ' + formatTime(hist.ravg) + ' | ' +
+											formatTime(hist.run),
+										display: true
+									},
+									elements: {
+										line: {
+											tension: 0.000001
+										}
+									},
+									scales: {
+										xAxes: [{
+											type: 'time',
+											time: {
+												parser: 'HH:mm:ss',
+												tooltipFormat: 'HH:mm:ss',
+												displayFormats: {
+													millisecond: 'HH:mm:ss'
+												}
+											},
+											scaleLabel: {
+												display: true,
+												labelString: 'Time'
+											}
+										}],
+										yAxes: [{
+											scaleLabel: {
+												display: true,
+												labelString: 'Temp'
+											}
+										}]
+									}
+								}
+							});
+						}
+					});
+				});
 			});
 		</script>
 	</head>
@@ -245,10 +340,21 @@ body * { -webkit-user-select: none; user-select: none; }
 				<button id="mode-off" class="active" disabled>Off</button><button id="mode-heat">Heat</button><button id="mode-cool">Cool</button>
 			</div>
 		</div>
+		<div class="row">
+			<div class="column small-12 btn-grp history">
+				<br><br>
+				<button id="history-btn">History</button>
+			</div>
+		</div>
 		<div id="roomInfo">
 			<div class="content">
 				<div class="info"></div>
 				<div class="close">x</div>
+			</div>
+		</div>
+		<div id="historyOverlay">
+			<div class="content">
+				<canvas width="500" height="100" id="history"></canvas>
 			</div>
 		</div>
 	</body>
