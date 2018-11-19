@@ -36,9 +36,10 @@ while($row = $ret->fetchArray()) {
 $sdata = [];
 $tavg = new AVG();
 $bounds = [0,0];
-$hourAgo = time()-3600;
+$now = time();
+$hourAgo = $now-3600;
 foreach($sensors as $sensor) {
-	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC';
+	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time DESC';
 	$ret = $db->query($q);
 	$h = [];
 	$i = 0;
@@ -56,7 +57,7 @@ foreach($sensors as $sensor) {
 		$savg->add($tmp);
 		$pavg->add($tmp);
 		if($i%6==0) {
-			array_push($h, Array('x'=>$row[0],'y'=>$pavg->get()));
+			array_push($h, Array('x'=>$row[0]*1000,'y'=>$pavg->get()));
 			$pavg = new AVG();
 		}
 		++$i;
@@ -71,16 +72,27 @@ foreach($relays as $relay) {
 	$ravg = new AVG();
 	$laston = $hourAgo;
 	$rh = [];
-	$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC');
+	$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' AND time>' . $hourAgo . ' ORDER BY time DESC');
 	while($row = $ret->fetchArray()) {
 		if($row[1]=='1') {
 			$laston = $row[0];
 		} else {
 			$ravg->add($row[0]-$laston);
 			$oavg->add($row[0]-$laston);
+			array_push($rh, Array('x'=>$laston,'y'=>$bounds[1]));
+			array_push($rh, Array('x'=>$laston,'y'=>$bounds[0]));	
+			array_push($rh, Array('x'=>$row[0],'y'=>$bounds[0]));	
+			array_push($rh, Array('x'=>$row[0],'y'=>$bounds[1]));
+			$laston = 0;
 		}
-		array_push($rh, Array('x'=>$row[0],'y'=>($row[1]=='1'?$bounds[0]:$bounds[1])));	
-		array_push($rh, Array('x'=>$row[0],'y'=>($row[1]=='1'?$bounds[1]:$bounds[0])));
+	}
+	if($laston != 0 && $ravg->cnt > 0) {
+		$ravg->add($now-$laston);
+		$oavg->add($now-$laston);
+		array_push($rh, Array('x'=>$laston,'y'=>$bounds[1]));
+		array_push($rh, Array('x'=>$laston,'y'=>$bounds[0]));	
+		array_push($rh, Array('x'=>$now,'y'=>$bounds[0]));	
+		array_push($rh, Array('x'=>$now,'y'=>$bounds[1]));
 	}
 	array_push($rdata, Array('id'=>$relay[1],'data'=>$rh,'avg'=>$ravg->get(),'run'=>$ravg->sum,'cnt'=>$ravg->cnt));
 }
