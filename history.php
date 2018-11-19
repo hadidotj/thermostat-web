@@ -38,7 +38,7 @@ $tavg = new AVG();
 $bounds = [0,0];
 $hourAgo = time()-3600;
 foreach($sensors as $sensor) {
-	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time DESC';
+	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC';
 	$ret = $db->query($q);
 	$h = [];
 	$i = 0;
@@ -71,7 +71,7 @@ foreach($relays as $relay) {
 	$ravg = new AVG();
 	$laston = $hourAgo;
 	$rh = [];
-	$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' AND time>' . $hourAgo . ' ORDER BY time DESC');
+	$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC');
 	while($row = $ret->fetchArray()) {
 		if($row[1]=='1') {
 			$laston = $row[0];
