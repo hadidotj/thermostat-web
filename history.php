@@ -79,20 +79,20 @@ foreach($relays as $relay) {
 		} else {
 			$ravg->add($row[0]-$laston);
 			$oavg->add($row[0]-$laston);
-			array_push($rh, Array('x'=>$laston,'y'=>$bounds[1]));
-			array_push($rh, Array('x'=>$laston,'y'=>$bounds[0]));	
-			array_push($rh, Array('x'=>$row[0],'y'=>$bounds[0]));	
-			array_push($rh, Array('x'=>$row[0],'y'=>$bounds[1]));
+			array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[1]));
+			array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[0]));	
+			array_push($rh, Array('x'=>$row[0]*1000,'y'=>$bounds[0]));	
+			array_push($rh, Array('x'=>$row[0]*1000,'y'=>$bounds[1]));
 			$laston = 0;
 		}
 	}
 	if($laston != 0 && $ravg->cnt > 0) {
 		$ravg->add($now-$laston);
 		$oavg->add($now-$laston);
-		array_push($rh, Array('x'=>$laston,'y'=>$bounds[1]));
-		array_push($rh, Array('x'=>$laston,'y'=>$bounds[0]));	
-		array_push($rh, Array('x'=>$now,'y'=>$bounds[0]));	
-		array_push($rh, Array('x'=>$now,'y'=>$bounds[1]));
+		array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[1]));
+		array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[0]));	
+		array_push($rh, Array('x'=>$now*1000,'y'=>$bounds[0]));	
+		array_push($rh, Array('x'=>$now*1000,'y'=>$bounds[1]));
 	}
 	array_push($rdata, Array('id'=>$relay[1],'data'=>$rh,'avg'=>$ravg->get(),'run'=>$ravg->sum,'cnt'=>$ravg->cnt));
 }
