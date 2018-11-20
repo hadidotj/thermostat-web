@@ -273,7 +273,8 @@ body * { -webkit-user-select: none; user-select: none; }
 									backgroundColor: color,
 									borderColor: color,
 									fill: false,
-									data: s.data
+									data: s.data,
+									yAxisID: 'y-axis-1'
 								});
 							}
 							var relayColor = {
@@ -288,7 +289,9 @@ body * { -webkit-user-select: none; user-select: none; }
 									backgroundColor: relayColor[r.id],
 									borderColor: relayColor[s.id],
 									fill: 'start',
-									data: r.data
+									data: r.data,
+									yAxisID: 'y-axis-2',
+									steppedLine: 'before'
 								});
 							}
 							new Chart('history', {
@@ -324,6 +327,20 @@ body * { -webkit-user-select: none; user-select: none; }
 											}
 										}],
 										yAxes: [{
+											type: 'linear',
+											display: true,
+											position: 'left',
+											id: 'y-axis-1',
+											scaleLabel: {
+												display: true,
+												labelString: 'Temp'
+											}
+										},{
+											type: 'linear',
+											display: true,
+											position: 'right',
+											id: 'y-axis-2',
+											gridLines: { drawOnChartArea: false },
 											scaleLabel: {
 												display: true,
 												labelString: 'Temp'

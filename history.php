@@ -35,11 +35,10 @@ while($row = $ret->fetchArray()) {
 // Compute overall average temp, average sensor temp, and sensor line data
 $sdata = [];
 $tavg = new AVG();
-$bounds = [0,0];
 $now = time();
 $hourAgo = $now-3600;
 foreach($sensors as $sensor) {
-	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time DESC';
+	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC';
 	$ret = $db->query($q);
 	$h = [];
 	$i = 0;
@@ -47,12 +46,6 @@ foreach($sensors as $sensor) {
 	$pavg = new AVG();
 	while($row = $ret->fetchArray()) {
 		$tmp = $row[1];
-		if($row[1] > $bounds[0]) {
-			$bounds[0] = $tmp;
-		}
-		if($bounds[1]==0 || $row[1]<$bounds[1]) {
-			$bounds[1] = $tmp;
-		}
 		$tavg->add($tmp);
 		$savg->add($tmp);
 		$pavg->add($tmp);
@@ -68,36 +61,36 @@ foreach($sensors as $sensor) {
 // Compute relay count and on/off time, average run time, and total run time
 $oavg = new AVG();
 $rdata = [];
+$debug = ['Start: '.$hourAgo];
 foreach($relays as $relay) {
 	$ravg = new AVG();
 	$laston = $hourAgo;
 	$rh = [];
-	$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' AND time>' . $hourAgo . ' ORDER BY time DESC');
+	$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC');
 	while($row = $ret->fetchArray()) {
 		if($row[1]=='1') {
+			array_push($debug,'On:'.$row[0]);
 			$laston = $row[0];
 		} else {
+			array_push($debug,'Off:'.$row[0].':'.($row[0]-$laston));
 			$ravg->add($row[0]-$laston);
 			$oavg->add($row[0]-$laston);
-			array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[1]));
-			array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[0]));	
-			array_push($rh, Array('x'=>$row[0]*1000,'y'=>$bounds[0]));	
-			array_push($rh, Array('x'=>$row[0]*1000,'y'=>$bounds[1]));
+			array_push($rh, Array('x'=>$laston*1000,'y'=>1));	
+			array_push($rh, Array('x'=>$row[0]*1000,'y'=>0));
 			$laston = 0;
 		}
 	}
 	if($laston != 0 && $ravg->cnt > 0) {
+		array_push($debug,'StillOn:'.$now.':'.($now-$laston));
 		$ravg->add($now-$laston);
 		$oavg->add($now-$laston);
-		array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[1]));
-		array_push($rh, Array('x'=>$laston*1000,'y'=>$bounds[0]));	
-		array_push($rh, Array('x'=>$now*1000,'y'=>$bounds[0]));	
-		array_push($rh, Array('x'=>$now*1000,'y'=>$bounds[1]));
+		array_push($rh, Array('x'=>$laston*1000,'y'=>1));
+		array_push($rh, Array('x'=>$now*1000,'y'=>0));
 	}
 	array_push($rdata, Array('id'=>$relay[1],'data'=>$rh,'avg'=>$ravg->get(),'run'=>$ravg->sum,'cnt'=>$ravg->cnt));
 }
 
 $db->close();
 
-echo json_encode(Array('sensors'=>$sdata,'relays'=>$rdata,'tavg'=>$tavg->get(),'ravg'=>$oavg->get(),'run'=>$oavg->sum,'cnt'=>$oavg->cnt));
+echo json_encode(Array('debug'=>$debug,'sensors'=>$sdata,'relays'=>$rdata,'tavg'=>$tavg->get(),'ravg'=>$oavg->get(),'run'=>$oavg->sum,'cnt'=>$oavg->cnt));
 ?>
