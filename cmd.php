@@ -6,7 +6,7 @@ if($s !== FALSE && socket_connect($s, 'localhost', 44147) !== FALSE) {
 	$in = $_GET['cmd'];
 	socket_write($s, $in, strlen($in));
 	
-	while($out = socket_read($s, 2048)) {
+	while(($out = socket_read($s, 2048)) !== FALSE) {
 		echo $out;
 	}
 	
