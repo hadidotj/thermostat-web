@@ -8,7 +8,6 @@ if($s!==FALSE) {
         echo fgets($s, 128);
     }
 	stream_socket_shutdown($s,STREAM_SHUT_RDWR);
-	sleep(1);
     fclose($s);
 } else {
 	http_response_code(500);
