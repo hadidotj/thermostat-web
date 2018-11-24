@@ -1,15 +1,18 @@
 <?php
 header('Content-Type: application/json');
 
-$s=fsockopen('192.168.1.200',44147,$errnum,$errstr,5) ;
-if($s!==FALSE) {
-	fwrite($s, $_GET['cmd']);
-    while(!feof($s)) {
-        echo fgets($s, 128);
-    }
-    fclose($s);
+$s = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+if($s !== FALSE && socket_connect($s, 'localhost', 44147) !== FALSE) {
+	$in = $_GET['cmd'];
+	socket_write($s, $in, strlen($in));
+	
+	while($out = socket_read($s, 2048)) {
+		echo $out;
+	}
+	
+	socket_close($s);
 } else {
 	http_response_code(500);
-	echo '{"status":500,"err":"Failed to connect to thermostat server: ' . trim($errstr) . '"}';
+	echo '{"status":500,"err":"Failed to connect to thermostat server: ' . trim(socket_strerror(socket_last_error($s))) . '"}';
 }
 ?>
