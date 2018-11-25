@@ -3,6 +3,21 @@
 header('Content-Type: application/json');
 $db = new SQLite3('/opt/thermostat/thermostat.db', SQLITE3_OPEN_READONLY);
 
+// set different views
+$views = [
+	'1h'=>['time'=>3600,'interval'=>30],
+	'8h'=>['time'=>3600*8,'interval'=>120],
+	'24h'=>['time'=>3600*24,'interval'=>300],
+	'7d'=>['time'=>3600*24*7,'interval'=>3600],
+	'1m'=>['time'=>3600*24*30,'interval'=>3600*3]
+];
+$viewName = ($_GET['v']!='')?$_GET['v']:'1h';
+if(isset($views[$viewName]) === FALSE) {
+	echo '{"error":"Unknow view name \"'.$viewName.'\"."}';
+	exit;
+}
+$view = $views[$viewName];
+
 // Average Calculator
 class AVG {
 	public $sum = 0;
@@ -36,7 +51,10 @@ while($row = $ret->fetchArray()) {
 $sdata = [];
 $tavg = new AVG();
 $now = time();
-$hourAgo = $now-3600;
+$now = 1543119073;
+$hourAgo = $now-$view['time'];
+$freq = $view['interval']/5;
+$debug = ['view:'.$_GET['v'],'time:'.$view['time'],'interval:'.$view['interval'],'now:'.$now,'ago:'.$hourAgo,'freq:'.$freq];
 foreach($sensors as $sensor) {
 	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC';
 	$ret = $db->query($q);
@@ -49,7 +67,7 @@ foreach($sensors as $sensor) {
 		$tavg->add($tmp);
 		$savg->add($tmp);
 		$pavg->add($tmp);
-		if($i%6==0) {
+		if($i%$freq==0) {
 			array_push($h, Array('x'=>$row[0]*1000,'y'=>$pavg->get()));
 			$pavg = new AVG();
 		}
@@ -61,7 +79,6 @@ foreach($sensors as $sensor) {
 // Compute relay count and on/off time, average run time, and total run time
 $oavg = new AVG();
 $rdata = [];
-$debug = ['Start: '.$hourAgo];
 foreach($relays as $relay) {
 	$ravg = new AVG();
 	$laston = $hourAgo;

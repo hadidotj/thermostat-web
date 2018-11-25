@@ -77,11 +77,15 @@ body * { -webkit-user-select: none; user-select: none; }
 #roomInfo .header { font-weight: bold; }
 
 .history { text-align: center; }
+.history .btn-grp button { width: 50px; height: 30px; }
 #history-btn { border-radius: 10px; }
-#rotateMsg { text-align: center; font-size: 2rem; margin-top: 20px; display: none; }
+#rotateMsg { text-align: center; font-size: 2rem; margin-top: 20px; }
+
+.portrait-only { display: none; }
+.landscape-only { display: block; }
 @media (orientation : portrait) {
-	#history { display: none!important; }
-	#rotateMsg { display: block;}
+	.portrait-only { display: block; }
+	.landscape-only { display: none; }
 }
 		</style>
 		<script src="js/jquery.min.js"></script>
@@ -244,11 +248,13 @@ body * { -webkit-user-select: none; user-select: none; }
 				$('#historyInfo .close').click(function() {
 					$('#historyInfo').hide();
 				});
-				$('#history-btn').click(function() {
+				var chart = null, config = null;
+				$('#history-btn,[data-history]').click(function() {
 					$('#historyInfo').show();
+					var viewName = ($(this).data('history')||'1h');
 					$.ajax({
 						type: 'GET',
-						url: 'history.php',
+						url: 'history.php?v=' + viewName,
 						success: function(hist) {
 							var colors = (function() {
 								var i = 0;
@@ -294,61 +300,70 @@ body * { -webkit-user-select: none; user-select: none; }
 									steppedLine: 'before'
 								});
 							}
-							new Chart('history', {
-								type: 'line',
-								data: {
-									datasets: datasets
-								},
-								options: {
-									title: {
-										text:'Temps Last Hour | ' + formatFloat(hist.tavg) + 'F | ' +
-											hist.cnt + ' | ' + formatTime(hist.ravg) + ' | ' +
-											formatTime(hist.run),
-										display: true
+							if(chart == null) {
+								config = {
+									type: 'line',
+									data: {
+										datasets: datasets
 									},
-									elements: {
-										line: {
-											tension: 0.000001
-										}
-									},
-									scales: {
-										xAxes: [{
-											type: 'time',
-											time: {
-												tooltipFormat: 'HH:mm:ss',
-												displayFormats: {
-													millisecond: 'HH:mm:ss',
-													minute: 'HH:mm'
+									options: {
+										title: {
+											text:'Temps ' + viewName + ' | ' + formatFloat(hist.tavg) + 'F | ' +
+												hist.cnt + ' | ' + formatTime(hist.ravg) + ' | ' +
+												formatTime(hist.run),
+											display: true
+										},
+										elements: {
+											line: {
+												tension: 0.000001
+											}
+										},
+										scales: {
+											xAxes: [{
+												type: 'time',
+												time: {
+													tooltipFormat: 'HH:mm:ss',
+													displayFormats: {
+														millisecond: 'HH:mm:ss',
+														minute: 'HH:mm'
+													}
+												},
+												scaleLabel: {
+													display: true,
+													labelString: 'Time'
 												}
-											},
-											scaleLabel: {
+											}],
+											yAxes: [{
+												type: 'linear',
 												display: true,
-												labelString: 'Time'
-											}
-										}],
-										yAxes: [{
-											type: 'linear',
-											display: true,
-											position: 'left',
-											id: 'y-axis-1',
-											scaleLabel: {
+												position: 'left',
+												id: 'y-axis-1',
+												scaleLabel: {
+													display: true,
+													labelString: 'Temp'
+												}
+											},{
+												type: 'linear',
 												display: true,
-												labelString: 'Temp'
-											}
-										},{
-											type: 'linear',
-											display: true,
-											position: 'right',
-											id: 'y-axis-2',
-											gridLines: { drawOnChartArea: false },
-											scaleLabel: {
-												display: true,
-												labelString: 'Temp'
-											}
-										}]
+												position: 'right',
+												id: 'y-axis-2',
+												gridLines: { drawOnChartArea: false },
+												scaleLabel: {
+													display: false,
+													labelString: 'Relay'
+												}
+											}]
+										}
 									}
-								}
-							});
+								};
+								chart = new Chart('history', config);
+							} else {
+								config.data.datasets = datasets;
+								config.options.title.text = 'Temps ' + viewName + ' | ' + formatFloat(hist.tavg) + 'F | ' +
+												hist.cnt + ' | ' + formatTime(hist.ravg) + ' | ' +
+												formatTime(hist.run);
+								chart.update();
+							}
 						}
 					});
 				});
@@ -406,10 +421,19 @@ body * { -webkit-user-select: none; user-select: none; }
 				<div class="close">x</div>
 			</div>
 		</div>
-		<div id="historyInfo" class="overlay">
+		<div id="historyInfo" class="overlay history">
 			<div class="container">
-				<canvas id="history"></canvas>
-				<div id="rotateMsg">Rotate to view chart</div>
+				<div class="landscape-only">
+					<div class="btn-grp">
+						<button data-history="1h">1H</button><!--
+						--><button data-history="8h">8H</button><!--
+						--><button data-history="24h">24H</button><!--
+						--><button data-history="7d">7D</button><!--
+						--><button data-history="1m">30D</button>
+					</div>
+					<canvas id="history"></canvas>
+				</div>
+				<div class="portrait-only" id="rotateMsg">Rotate to view chart</div>
 				<div class="close">x</div>
 			</div>
 		</div>
