@@ -51,7 +51,6 @@ while($row = $ret->fetchArray()) {
 $sdata = [];
 $tavg = new AVG();
 $now = time();
-$now = 1543119073;
 $hourAgo = $now-$view['time'];
 $freq = $view['interval']/5;
 $debug = ['view:'.$_GET['v'],'time:'.$view['time'],'interval:'.$view['interval'],'now:'.$now,'ago:'.$hourAgo,'freq:'.$freq];
