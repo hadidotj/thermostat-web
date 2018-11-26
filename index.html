@@ -6,6 +6,7 @@
 		<link rel="stylesheet" href="css/foundation.min.css">
 		<style>
 body * { -webkit-user-select: none; user-select: none; }
+
 #err-div { position: fixed; width: 100%; bottom: 0; left: 0; z-index: 100; }
 #err-div div { padding: 10px; border-radius: 5px; }
 #err-div div span { float: right; width: 20px; height: 20px; font-size: 0.75rem; font-weight: bold; margin-top: 3px; text-align: center; border-radius: 50%; }
@@ -15,6 +16,7 @@ body * { -webkit-user-select: none; user-select: none; }
 #err-div .warn span { color: #aa8d00; border: 1px solid #aa8d00; }
 #err-div .info { color: #005caa; background-color: #e7f1fd; border: 1px solid #005caa; }
 #err-div .info span { color: #005caa; border: 1px solid #005caa; }
+
 .v-btn-grp button, .btn-grp button {
 	width: 100px;
 	height: 50px;
@@ -24,7 +26,7 @@ body * { -webkit-user-select: none; user-select: none; }
 	box-sizing: border-box;
 	padding: 0;
 	margin: 0;
-	line-spacing: 0;
+	line-height: 0;
 }
 .v-btn-grp button { display: block; }
 .v-btn-grp button[disabled], .btn-grp button[disabled] { background-color: #ddd; }
@@ -35,16 +37,27 @@ body * { -webkit-user-select: none; user-select: none; }
 .btn-grp button:not(:first-of-type) { border-radius: 0; border-left: 0; }
 .btn-grp button:last-of-type { border-radius: 0 10px 10px 0; }
 
+.dark { color: #ddd; background-color: #000; }
+.dark .v-btn-grp button, .dark .btn-grp button { color: #fff; background-color: #444; border: 1px solid #666; box-shadow: inset 0 0 5px #666; }
+.dark .v-btn-grp button[disabled], .dark .btn-grp button[disabled] { color: #bbb; background-color: #222; }
+
 .status { margin: 20px 0 0; text-align: center; }
 .status h1 { margin: 0 0 10px; }
 .status h3 { margin: 0; }
 .status p { margin: 0; font-size: 0.75rem }
-.status img { width: 15px; height: 15px; filter: alpha(opacity=20); opacity: 0.2; }
-.status img.on { filter: alpha(opacity=100); opacity: 1.0; }
+.status .img { width: 15px; height: 15px; filter: alpha(opacity=20); opacity: 0.2; background-size: 15px 15px; }
+.status .img.on { filter: alpha(opacity=100); opacity: 1.0; }
+#fan-icon { background-image: url(img/fan-light.png); }
+#cool-icon { background-image: url(img/cool-light.png); }
+#heat-icon { background-image: url(img/heat-light.png); }
+.dark #fan-icon { background-image: url(img/fan-dark.png); }
+.dark #cool-icon { background-image: url(img/cool-dark.png); }
+.dark #heat-icon { background-image: url(img/heat-dark.png); }
 
 .offsets { color: #999; font-size: 0.75rem; }
 
 .setTmp span { display: block; width: 24px; height: 24px; border: 5px solid #000; transform: rotate(45deg); }
+.dark .setTmp span { border: 5px solid #ddd; }
 #up span { margin: 15px auto 0; border-right: 0; border-bottom: 0; }
 #down span { margin: -5px auto 0; border-left: 0; border-top: 0; }
 
@@ -91,7 +104,13 @@ body * { -webkit-user-select: none; user-select: none; }
 		<script src="js/jquery.min.js"></script>
 		<script src="js/Chart.bundle.min.js"></script>
 		<script>
-		
+			var checkTheme = function() {
+				var hour = (new Date()).getHours();
+				if(hour <= 7 || hour >= 17 ) {
+					$('body').addClass('dark');
+				}
+			};
+			
 			var msg = {
 				msg: function(msg, type) {
 					var errDiv = $('#err-div');
@@ -127,6 +146,7 @@ body * { -webkit-user-select: none; user-select: none; }
 			
 			var setTmp = null, offset = null, roomnames = null;
 			var checkStatus = function() {
+				checkTheme();
 				$.ajax({
 					method: 'GET',
 					url: 'cmd.php?cmd=status',
@@ -371,18 +391,19 @@ body * { -webkit-user-select: none; user-select: none; }
 		</script>
 	</head>
 	<body>
+		<script>checkTheme();</script>
 		<div id="err-div"></div>
 		<div class="row status">
 			<div class="column small-7">
 				<div class="row">
 					<div class="column small-4">
-						<img id="fan-icon" src="img/fan.png"/><br><span id="fan-time"></span>
+						<div id="fan-icon" class="img"></div><br><span id="fan-time"></span>
 					</div>
 					<div class="column small-4">
-						<img id="cool-icon" src="img/cool.png"/><br><span id="cool-time"></span>
+						<div id="cool-icon" class="img"></div><br><span id="cool-time"></span>
 					</div>
 					<div class="column small-4">
-						<img id="heat-icon" src="img/heat.png"/><br><span id="heat-time"></span>
+						<div id="heat-icon" class="img"></div><br><span id="heat-time"></span>
 					</div>
 				</div>
 				<h1><span id="avgTmp">--.-</span>&deg;F</h1>
