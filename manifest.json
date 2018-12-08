@@ -1,10 +1,10 @@
 {
    "name": "Thermostat",
    "short_name": "Thermostat",
-   "display": "standalone"
+   "display": "standalone",
    "icons": [{
       "src": "img/icon-180.png",
       "sizes": "180x180"
    }],
-   "background_color": "#888;"
+   "background_color": "#888"
 }
