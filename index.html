@@ -155,7 +155,7 @@ body * { -webkit-user-select: none; user-select: none; }
 	40% { opacity: 1; }
 }
 
-.v-btn-grp button, .btn-grp button {
+button, .v-btn-grp button, .btn-grp button {
 	width: 100px;
 	height: 50px;
 	background-color: #eee;
@@ -165,9 +165,9 @@ body * { -webkit-user-select: none; user-select: none; }
 	padding: 0;
 	margin: 0;
 	line-height: 0;
+	border-radius: 10px;
 }
-.v-btn-grp button { display: block; }
-.v-btn-grp button[disabled], .btn-grp button[disabled] { background-color: #ddd; }
+button.active, button[disabled], .v-btn-grp button[disabled], .btn-grp button[disabled] { color: #888; background-color: #ddd; }
 .v-btn-grp button:first-of-type  { border-radius: 10px 10px 0 0; }
 .v-btn-grp button:not(:first-of-type) { border-radius: 0; border-top: 0; }
 .v-btn-grp button:last-of-type { border-radius: 0 0 10px 10px; }
@@ -194,10 +194,12 @@ body * { -webkit-user-select: none; user-select: none; }
 
 .offsets { color: #999; font-size: 0.75rem; }
 
+.setTmp { line-height: 0; }
 .setTmp span { display: block; width: 24px; height: 24px; border: 5px solid #000; transform: rotate(45deg); }
 .dark .setTmp span { border: 5px solid #ddd; }
 #up span { margin: 15px auto 0; border-right: 0; border-bottom: 0; }
 #down span { margin: -5px auto 0; border-left: 0; border-top: 0; }
+.tmpHold { margin: 10px 0 0; }
 
 .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; padding: 5px; }
 .overlay .container {
@@ -230,9 +232,10 @@ body * { -webkit-user-select: none; user-select: none; }
 #roomInfo .header { font-weight: bold; }
 
 .history { text-align: center; }
-.history .btn-grp button { width: 50px; height: 30px; }
-#history-btn { border-radius: 10px; }
+.history .btn-grp button { width: 50px; height: 30px; border-radius: 10px; }
 #rotateMsg { text-align: center; font-size: 2rem; margin-top: 20px; }
+#history { display: block; }
+#history.loading { display: none!important;}
 
 .portrait-only { display: none; }
 .landscape-only { display: block; }
@@ -325,11 +328,16 @@ body * { -webkit-user-select: none; user-select: none; }
 							$('#avgTmp').html(formatFloat(status.avgTmp));
 						}
 						if(status.settings.setTmp) {
-							setTmp = status.settings.setTmp
+							setTmp = status.settings.setTmp;
 							offset = status.settings.offset;
 							$('#setTmp').html(formatFloat(setTmp));
 							$('#lowerOffset').html(formatFloat(setTmp-offset) + "&deg;F");
 							$('#upperOffset').html(formatFloat(setTmp+offset) + "&deg;F");
+						}
+						if(status.hold) {
+							$('#tmpHold').addClass('active');
+						} else {
+							$('#tmpHold').removeClass('active');
 						}
 						if(status.settings.mode) {
 							var modes = $('.mode');
@@ -402,6 +410,10 @@ body * { -webkit-user-select: none; user-select: none; }
 						$('#upperOffset').html((Math.floor((setTmp+offset)*100)/100).toFixed(2) + "&deg;F");
 					}
 				});
+				$('#tmpHold').click(function() {
+				    var arg = $(this).hasClass('active')?'0':'1';
+				    sendCmd('hold,'+ arg);
+				});
 				$('#avgTmp').click(function() {
 					$('#roomInfo').show();
 				});
@@ -413,7 +425,14 @@ body * { -webkit-user-select: none; user-select: none; }
 				});
 				var loading = function(show) {
 				    var icon = $('.sk-fading-circle');
-					(show)?icon.addClass('active'):icon.removeClass('active');
+				    var chart = $('#history');
+				    if(show) {
+						icon.addClass('active');
+						chart.addClass('loading');
+					} else {
+						icon.removeClass('active');
+						chart.removeClass('loading');
+					}
 				};
 				var chart = null, config = null;
 				$('#history-btn,[data-history]').click(function() {
@@ -473,7 +492,7 @@ body * { -webkit-user-select: none; user-select: none; }
 									steppedLine: 'before'
 								});
 							}
-							if(chart == null) {
+							if(chart === null) {
 								config = {
 									type: 'line',
 									data: {
@@ -566,9 +585,17 @@ body * { -webkit-user-select: none; user-select: none; }
 				</div>
 				<h3><span id="setTmp">--.-</span>&deg;F</h3>
 			</div>
-			<div class="column small-5 v-btn-grp setTmp">
-				<button id="up"><span></span></button>
-				<button id="down"><span></span></button>
+			<div class="column small-5">
+				<div class="row">
+					<div class="column small-12 v-btn-grp setTmp">
+						<button id="up"><span></span></button><button id="down"><span></span></button>
+					</div>
+				</div>
+				<div class="row">
+					<div class="column small-12 tmpHold">
+						<button id="tmpHold">Hold</button>
+					</div>
+				</div>
 			</div>
 		</div>
 		<div class="row">
@@ -584,7 +611,7 @@ body * { -webkit-user-select: none; user-select: none; }
 			</div>
 		</div>
 		<div class="row">
-			<div class="column small-12 btn-grp history">
+			<div class="column small-12 history">
 				<br><br>
 				<button id="history-btn">History</button>
 			</div>
