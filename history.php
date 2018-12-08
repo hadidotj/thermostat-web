@@ -2,6 +2,7 @@
 // Open DB
 header('Content-Type: application/json');
 $db = new SQLite3('/opt/thermostat/thermostat.db', SQLITE3_OPEN_READONLY);
+$db->busyTimeout(5000);
 
 // set different views
 $views = [
