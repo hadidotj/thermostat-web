@@ -171,7 +171,7 @@ button, .v-btn-grp button, .btn-grp button {
 	line-height: 0;
 	border-radius: 10px;
 }
-button.active, button[disabled], .v-btn-grp button[disabled], .btn-grp button[disabled] { color: #888; background-color: #ddd; }
+button.active, button[disabled] { color: #888; background-color: #ddd; }
 .v-btn-grp button:first-of-type  { border-radius: 10px 10px 0 0; }
 .v-btn-grp button:not(:first-of-type) { border-radius: 0; border-top: 0; }
 .v-btn-grp button:last-of-type { border-radius: 0 0 10px 10px; }
@@ -180,8 +180,8 @@ button.active, button[disabled], .v-btn-grp button[disabled], .btn-grp button[di
 .btn-grp button:last-of-type { border-radius: 0 10px 10px 0; }
 
 .dark { color: #ddd; background-color: #000; }
-.dark .v-btn-grp button, .dark .btn-grp button { color: #fff; background-color: #444; border: 1px solid #666; box-shadow: inset 0 0 5px #666; }
-.dark .v-btn-grp button[disabled], .dark .btn-grp button[disabled] { color: #bbb; background-color: #222; }
+.dark button { color: #fff; background-color: #444; border: 1px solid #666; box-shadow: inset 0 0 5px #666; }
+.dark button.active, .dark button[disabled] { color: #bbb; background-color: #222; }
 
 .status { margin: 20px 0 0; text-align: center; }
 .status h1 { margin: 0 0 10px; }
