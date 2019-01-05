@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ERROR);
 header('Content-Type: application/json;charset=UTF-8');
 $rawbody = file_get_contents('php://input');
 $body = json_decode($rawbody, TRUE);
@@ -25,7 +26,21 @@ $intent = $body['request']['intent']['name'];
 $slots = $body['request']['intent']['slots'];
 
 if($intent == 'CurrentTemperatureIntent') {
-	$speak = 'The current temperature is ' . (sendCmd('status')['avgTmp']) . ' degrees.';
+    $resolution = $slots['location']['resolutions']['resolutionsPerAuthority'][0]['values'][0]['value'];
+    $location = $resolution['id'];
+    $status = sendCmd('status');
+    if($location != NULL) {
+        $tmp = $status['rooms'][$location][0];
+        $name = $resolution['name'];
+        $name = ($name != NULL) ? $name : $slots['location']['value'];
+        if($tmp != NULL) {
+            $speak = 'The ' . $name . ' temperature is ' . $tmp . ' degrees.';
+        } else {
+            $speak = 'Unknown location ' . $name;
+        }
+    } else {
+        $speak = 'The average temperature is ' . ($status['avgTmp']) . ' degrees.';
+    }
 }
 
 else {
