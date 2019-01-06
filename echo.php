@@ -41,9 +41,11 @@ if($intent == 'CurrentTemperatureIntent') {
     } else {
         $speak = 'The average temperature is ' . ($status['avgTmp']) . ' degrees.';
     }
-}
-
-else {
+} else if($intent == 'SetTemperatureIntent') {
+    $newtmp = $slots['newtmp']['value'];
+    sendCmd('setTmp,' . $newtmp);
+    $speak = 'Ok';
+} else {
     $speak = 'Sorry, I am unsure of your intent.';
 }
 
