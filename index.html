@@ -11,6 +11,8 @@
 		<style>
 body * { -webkit-user-select: none; user-select: none; }
 
+/* section Error Div + Loading Spinner */
+
 #err-div { position: fixed; width: 100%; bottom: 0; left: 0; z-index: 100; }
 #err-div div { padding: 10px; border-radius: 5px; }
 #err-div div span { float: right; width: 20px; height: 20px; font-size: 0.75rem; font-weight: bold; margin-top: 3px; text-align: center; border-radius: 50%; }
@@ -232,8 +234,18 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 }
 .dark .overlay .close { color: #ddd; border: 1px solid #666; }
 
+input { border: 1px solid #000; -webkit-user-select: initial; user-select: initial; }
+.dark input { color: #ddd; background: #333; border: 1px solid #666; }
+
 #roomInfo { height: 33%; }
-#roomInfo .header { font-weight: bold; }
+#roomInfo .header { font-weight: bold; border-bottom: 1px solid #aaa; }
+#roomInfo .footer { font-weight: bold; border-top: 1px solid #aaa; }
+
+#setTmpEntry { height: 150px; width: 60%; left: 30px; top: 110px; }
+#setTmpEntry .container { padding-top: 10px; }
+#setTmpEntry input { width: 75px; margin-bottom: 5px; }
+#setTmpEntry button { width: 75px; height: 25px; }
+#setTmpEntry button { width: 75px; height: 25px; }
 
 .history { text-align: center; }
 .history .btn-grp button { width: 50px; height: 30px; border-radius: 10px; }
@@ -331,12 +343,16 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 						if(status.avgTmp) {
 							$('#avgTmp').html(formatFloat(status.avgTmp));
 						}
-						if(status.settings.setTmp) {
+						if(status.settings.setTmp && status.settings.mode!='OFF') {
 							setTmp = status.settings.setTmp;
 							offset = status.settings.offset;
-							$('#setTmp').html(formatFloat(setTmp));
-							$('#lowerOffset').html(formatFloat(setTmp-offset) + "&deg;F");
-							$('#upperOffset').html(formatFloat(setTmp+offset) + "&deg;F");
+							$('#setTmp').html(formatFloat(setTmp) + '&deg;F');
+							$('#newTmpEntry').trigger('tmpupdate',[formatFloat(setTmp)]);
+							$('#lowerOffset').html(formatFloat(setTmp-offset) + '&deg;F');
+							$('#upperOffset').html(formatFloat(setTmp+offset) + '&deg;F');
+						} else {
+							$('#setTmp').html('OFF');
+							$('#lowerOffset,#upperOffset').html('--.--');
 						}
 						if(status.hold) {
 							$('#tmpHold').addClass('active');
@@ -352,6 +368,7 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 							roomnames = status.settings.roomnames;
 							
 							var roomDiv = $('#roomInfo .info');
+							var cnt = 0,  avgTmp = 0.0, avgHum = 0.0;
 							var body = '<div class="row header">' +
 								'<div class="column small-3">Name</div>' +
 								'<div class="column small-3">Temp</div>' +
@@ -360,6 +377,9 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 								'</div>';
 							$.each(status.rooms, function(name, room) {
 								name = roomnames[name] || name;
+								++cnt;
+								avgTmp += parseFloat(room[0]!=='0' ? room[0] : 0);
+								avgHum += parseFloat(room[1]!=='0' ? room[1] : 0);
 								body += '<div class="row">' +
 									'<div class="column small-3">' + name + '</div>' +
 									'<div class="column small-3">' + formatFloat(room[0]!=='0' ? room[0] : '-') + '&deg;F</div>' +
@@ -367,6 +387,12 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 									'<div class="column small-3">' + (time-Math.floor(room[2])) + '</div>' +
 									'</div>';
 							});
+							body += '<div class="row footer">' +
+								'<div class="column small-3">Average</div>' +
+								'<div class="column small-3">' + formatFloat(avgTmp/cnt) + '&deg;F</div>' +
+								'<div class="column small-3">' + formatFloat(avgHum/cnt) + '%</div>' +
+								'<div class="column small-3">-</div>' +
+								'</div>';
 							roomDiv.html(body);
 						}
 					}, error: function(xhr, text) {
@@ -375,7 +401,7 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 				 });
 			};
 			checkStatus();
-			setInterval(checkStatus, 5000);
+			window.updateInt = setInterval(checkStatus, 5000);
 			
 			var sendCmd = function(cmd) {
 				$.ajax({
@@ -409,7 +435,7 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 					if(setTmp) {
 						setTmp += (this.id.indexOf('up') !== -1) ? 0.5: -0.5;
 						sendCmd('setTmp,' + setTmp);
-						$('#setTmp').html((Math.floor(setTmp*100)/100).toFixed(2));
+						$('#setTmp').html((Math.floor(setTmp*100)/100).toFixed(2) + "&deg;F");
 						$('#lowerOffset').html((Math.floor((setTmp-offset)*100)/100).toFixed(2) + "&deg;F");
 						$('#upperOffset').html((Math.floor((setTmp+offset)*100)/100).toFixed(2) + "&deg;F");
 					}
@@ -421,11 +447,38 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 				$('#avgTmp').click(function() {
 					$('#roomInfo').show();
 				});
-				$('#roomInfo .close').click(function() {
-					$('#roomInfo').hide();
+				$('#setTmp').click(function() {
+                    if($('#setTmp').html() !== 'OFF') {
+                        $('#setTmpEntry').show();
+                    }
 				});
-				$('#historyInfo .close').click(function() {
-					$('#historyInfo').hide();
+                $('#newTmpEntry').focus(function() {
+                    $(this).data('focus', true);
+				}).blur(function() {
+                    $(this).data('focus', false);
+				}).on('tmpupdate', function(e, newTmp) {
+				    var $this = $(this);
+                    if(!$this.data('focus')) {
+                        $this.val(newTmp);
+					}
+				});
+				var quickSet = function(setTmp, $elm) {
+					sendCmd('setTmp,' + setTmp);
+					$('#setTmp').html((Math.floor(setTmp*100)/100).toFixed(2) + "&deg;F");
+					$('#lowerOffset').html((Math.floor((setTmp-offset)*100)/100).toFixed(2) + "&deg;F");
+					$('#upperOffset').html((Math.floor((setTmp+offset)*100)/100).toFixed(2) + "&deg;F");
+					$elm.parents('.overlay').hide();
+				};
+				$('#newTmpSet').click(function() {
+					quickSet($('#newTmpEntry').val(), $(this));
+				});
+				$('.preset').click(function() {
+					var $this = $(this);
+					quickSet($this.data('val'), $this);
+				});
+				var overlays = $('.overlay');
+                overlays.find('.close').click(function() {
+					$(this).parents('.overlay').hide();
 				});
 				var loading = function(show) {
 				    var icon = $('.sk-fading-circle');
@@ -587,7 +640,7 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 					<div id="lowerOffset" class="column small-4 small-offset-1">--.--&deg;F</div>
 					<div id="upperOffset"  class="column small-4 small-offset-2 last">--.--&deg;F</div>
 				</div>
-				<h3><span id="setTmp">--.-</span>&deg;F</h3>
+				<h3 id="setTmp">--.--&deg;F</h3>
 			</div>
 			<div class="column small-5">
 				<div class="row">
@@ -624,6 +677,19 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 		<div id="roomInfo" class="overlay">
 			<div class="container">
 				<div class="info"></div>
+				<div class="close">x</div>
+			</div>
+		</div>
+		<div id="setTmpEntry" class="overlay">
+			<div class="container">
+				<input type="text" id="newTmpEntry" value=""/>
+				<button id="newTmpSet">Set</button>
+				<br>
+				<button class="preset" data-val="67">67&deg;F</button>
+				<button class="preset" data-val="71">71&deg;F</button>
+				<br>
+				<button class="preset" data-val="70">70&deg;F</button>
+				<button class="preset" data-val="72">72&deg;F</button>
 				<div class="close">x</div>
 			</div>
 		</div>
