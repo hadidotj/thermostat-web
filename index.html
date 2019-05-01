@@ -340,6 +340,9 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 							$('#heat-icon').removeClass('on');
 							$('#heat-time').html('');
 						}
+						if(status.weather) {
+							$('#outdoorTmp').html(formatFloat(status.weather.main.temp));
+						}
 						if(status.avgTmp) {
 							$('#avgTmp').html(formatFloat(status.avgTmp));
 						}
@@ -635,7 +638,10 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 						<div id="heat-icon" class="img"></div><br><span id="heat-time"></span>
 					</div>
 				</div>
-				<h1><span id="avgTmp">--.-</span>&deg;F</h1>
+				<div class="row offsets">
+					<p class="column small-12"><span id="outdoorTmp">--.--</span>&deg;F</p>
+				</div>
+				<h1><span id="avgTmp">--.--</span>&deg;F</h1>
 				<div class="row offsets">
 					<div id="lowerOffset" class="column small-4 small-offset-1">--.--&deg;F</div>
 					<div id="upperOffset"  class="column small-4 small-offset-2 last">--.--&deg;F</div>
