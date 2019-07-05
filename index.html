@@ -317,7 +317,7 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 						
 						if(status.fan.running) {
 							$('#fan-icon').addClass('on');
-							$('#fan-time').html(time-status.fan.time);
+							$('#fan-time').html(formatTime(time-status.fan.time));
 							$('#fan-auto').attr('disabled', false);
 							$('#fan-on').attr('disabled', true);
 						} else {
@@ -328,7 +328,7 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 						}
 						if(status.cool.running) {
 							$('#cool-icon').addClass('on');
-							$('#cool-time').html(time-status.cool.time);
+							$('#cool-time').html(formatTime(time-status.cool.time));
 						} else {
 							$('#cool-icon').removeClass('on');
 							$('#cool-time').html('');
