@@ -6,11 +6,11 @@ $db->busyTimeout(5000);
 
 // set different views
 $views = [
-	'1h'=>['time'=>3600,'interval'=>30],
-	'8h'=>['time'=>3600*8,'interval'=>120],
-	'24h'=>['time'=>3600*24,'interval'=>300],
-	'7d'=>['time'=>3600*24*7,'interval'=>3600],
-	'1m'=>['time'=>3600*24*30,'interval'=>3600*3]
+	'1h'=>['time'=>3600,'interval'=>30,'weather'=>0],
+	'8h'=>['time'=>3600*8,'interval'=>120,'weather'=>0],
+	'24h'=>['time'=>3600*24,'interval'=>300,'weather'=>0],
+	'7d'=>['time'=>3600*24*7,'interval'=>3600,'weather'=>12],
+	'1m'=>['time'=>3600*24*30,'interval'=>3600*3,'weather'=>16]
 ];
 $viewName = ($_GET['v']!='')?$_GET['v']:'1h';
 if(isset($views[$viewName]) === FALSE) {
@@ -50,30 +50,48 @@ while($row = $ret->fetchArray()) {
 
 // Compute overall average temp, average sensor temp, and sensor line data
 $sdata = [];
+$outside = null;
 $tavg = new AVG();
 $now = time();
 $hourAgo = $now-$view['time'];
 $freq = $view['interval']/5;
 $debug = ['view:'.$_GET['v'],'time:'.$view['time'],'interval:'.$view['interval'],'now:'.$now,'ago:'.$hourAgo,'freq:'.$freq];
 foreach($sensors as $sensor) {
+	$name = $sensor[1];
+	$isOutside = $name == 'outside';
 	$q = 'SELECT time,temp FROM temphistory WHERE sensor=' . $sensor[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC';
 	$ret = $db->query($q);
 	$h = [];
 	$i = 0;
 	$savg = new AVG();
 	$pavg = new AVG();
+	$min = 500;
+	$max = -500;
 	while($row = $ret->fetchArray()) {
 		$tmp = $row[1];
-		$tavg->add($tmp);
+		if(!$isOutside) {
+			$tavg->add($tmp);
+		}
 		$savg->add($tmp);
 		$pavg->add($tmp);
-		if($i%$freq==0) {
-			array_push($h, Array('x'=>$row[0]*1000,'y'=>$pavg->get()));
+		if((!$isOutside && $i%$freq==0) || ($isOutside && ($view['weather'] == 0 || $i%$view['weather'] == 0))) {
+			array_push($h, Array('x'=>$row[0]*1000,'y'=>number_format($pavg->get(), 2)));
 			$pavg = new AVG();
+		}
+		
+		if($tmp > $max) {
+			$max = $tmp;
+		}
+		if($tmp < $min) {
+			$min = $tmp;
 		}
 		++$i;
 	}
-	array_push($sdata, Array('id'=>$sensor[1],'data'=>$h,'avg'=>$savg->get()));
+	if($isOutside) {
+		$outside = Array('id'=>$name,'data'=>$h,'avg'=>$savg->get(), 'min'=>$min, 'max'=>$max);
+	} else {
+		array_push($sdata, Array('id'=>$name,'data'=>$h,'avg'=>$savg->get(), 'min'=>$min, 'max'=>$max));
+	}
 }
 
 // Compute relay count and on/off time, average run time, and total run time
@@ -109,5 +127,5 @@ foreach($relays as $relay) {
 
 $db->close();
 
-echo json_encode(Array('debug'=>$debug,'sensors'=>$sdata,'relays'=>$rdata,'tavg'=>$tavg->get(),'ravg'=>$oavg->get(),'run'=>$oavg->sum,'cnt'=>$oavg->cnt));
+echo json_encode(Array('debug'=>$debug,'sensors'=>$sdata,'outside'=>$outside,'relays'=>$rdata,'tavg'=>$tavg->get(),'ravg'=>$oavg->get(),'run'=>$oavg->sum,'cnt'=>$oavg->cnt));
 ?>
