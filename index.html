@@ -523,6 +523,7 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 								}};
 							})();
 							var datasets = [];
+							var inmin = 0, inmax = 0;
 							for(var i in hist.sensors) {
 								var s = hist.sensors[i];
 								var color = colors.next();
@@ -534,7 +535,21 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 									data: s.data,
 									yAxisID: 'y-axis-1'
 								});
+								if(s.max > inmax) {
+									inmax = s.max;
+								}
+								if(s.min > inmin) {
+									inmin = s.min;
+								}
 							}
+							datasets.push({
+								label: 'Outside | ' + formatFloat(hist.outside.avg) + 'F',
+								backgroundColor: 'rgb(255, 99, 132)',
+								borderColor: 'rgb(255, 99, 132)',
+								fill: false,
+								data: hist.outside.data,
+								yAxisID: 'y-axis-2'
+							});
 							var relayColor = {
 								'FAN': 'rgba(75, 192, 192, 0.5)',
 								'HEAT': 'rgba(255, 99, 132, 0.25)',
@@ -548,7 +563,7 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 									borderColor: relayColor[s.id],
 									fill: 'start',
 									data: r.data,
-									yAxisID: 'y-axis-2',
+									yAxisID: 'y-axis-3',
 									steppedLine: 'before'
 								});
 							}
@@ -590,20 +605,34 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 												display: true,
 												position: 'left',
 												id: 'y-axis-1',
+												gridLines: { drawOnChartArea: true },
 												scaleLabel: {
 													display: true,
-													labelString: 'Temp'
-												}
+													labelString: 'Inside'
+												},
+												ticks: { suggestedMin: inmin-5, suggestedMax: inmax+5 }
+											},{
+												type: 'linear',
+												display: true,
+												position: 'left',
+												id: 'y-axis-2',
+												gridLines: { drawOnChartArea: false },
+												scaleLabel: {
+													display: true,
+													labelString: 'Outside'
+												},
+												ticks: { suggestedMin: hist.outside.min-5, suggestedMax: hist.outside.max+5 }
 											},{
 												type: 'linear',
 												display: true,
 												position: 'right',
-												id: 'y-axis-2',
+												id: 'y-axis-3',
 												gridLines: { drawOnChartArea: false },
 												scaleLabel: {
 													display: false,
 													labelString: 'Relay'
-												}
+												},
+												ticks: { min: 0, max: 1 }
 											}]
 										}
 									}
