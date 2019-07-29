@@ -104,10 +104,8 @@ foreach($relays as $relay) {
 	$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' AND time>' . $hourAgo . ' ORDER BY time ASC');
 	while($row = $ret->fetchArray()) {
 		if($row[1]=='1') {
-			array_push($debug,'On:'.$row[0]);
 			$laston = $row[0];
 		} else {
-			array_push($debug,'Off:'.$row[0].':'.($row[0]-$laston));
 			$ravg->add($row[0]-$laston);
 			$oavg->add($row[0]-$laston);
 			array_push($rh, Array('x'=>$laston*1000,'y'=>1));	
@@ -115,14 +113,34 @@ foreach($relays as $relay) {
 			$laston = 0;
 		}
 	}
-	if($laston != 0 && $ravg->cnt > 0) {
-		array_push($debug,'StillOn:'.$now.':'.($now-$laston));
+	
+	// If the last-on is not 0, it is potentially on. If $laston != 0, it is either equal to $hourAgo, or to some time in the last hour.
+	// If lastOn is not equal to $hourAgo, it turned on sometime within the last hour and is still running
+	// The only case I cannot determine here is if the relay was on for more than an hour... (i.e. runs for 1.5hours)
+	if($laston > $hourAgo) {
 		$ravg->add($now-$laston);
 		$oavg->add($now-$laston);
 		array_push($rh, Array('x'=>$laston*1000,'y'=>1));
 		array_push($rh, Array('x'=>$now*1000,'y'=>0));
 	}
-	array_push($rdata, Array('id'=>$relay[1],'data'=>$rh,'avg'=>$ravg->get(),'run'=>$ravg->sum,'cnt'=>$ravg->cnt));
+	
+	// If there are no values from the last hour, see if the last entry is a 1, meaning it is currently on.
+	if($ravg->cnt == 0) {
+		$ret = $db->query('SELECT time,state FROM relayhistory WHERE relay=' . $relay[0] . ' ORDER BY time DESC LIMIT 1');
+		$lastState = $ret->fetchArray();
+		if($lastState && $lastState[1] == '1') {
+			$laston = $lastState[0];
+			$ravg->add($now-$laston);
+			$oavg->add($now-$laston);
+			array_push($rh, Array('x'=>$laston*1000,'y'=>1));
+			array_push($rh, Array('x'=>$now*1000,'y'=>0));
+			}
+	}
+	
+	// Only add to output if we have values! This keeps the graph legend cleaner.
+	if($ravg->cnt > 0) {
+		array_push($rdata, Array('id'=>$relay[1],'data'=>$rh,'avg'=>$ravg->get(),'run'=>$ravg->sum,'cnt'=>$ravg->cnt));
+	}
 }
 
 $db->close();
