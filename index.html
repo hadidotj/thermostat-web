@@ -237,7 +237,7 @@ button.active, button[disabled] { color: #888; background-color: #ddd; }
 input { border: 1px solid #000; -webkit-user-select: initial; user-select: initial; }
 .dark input { color: #ddd; background: #333; border: 1px solid #666; }
 
-#roomInfo { height: 33%; }
+#roomInfo { height: auto; }
 #roomInfo .header { font-weight: bold; border-bottom: 1px solid #aaa; }
 #roomInfo .footer { font-weight: bold; border-top: 1px solid #aaa; }
 
@@ -396,6 +396,14 @@ input { border: 1px solid #000; -webkit-user-select: initial; user-select: initi
 								'<div class="column small-3">' + formatFloat(avgHum/cnt) + '%</div>' +
 								'<div class="column small-3">-</div>' +
 								'</div>';
+							if(status.weather) {
+								body += '<br><br><div class="row footer">' +
+									'<div class="column small-3">Outside</div>' +
+									'<div class="column small-3">' + formatFloat(status.weather.main.temp) + '&deg;F</div>' +
+									'<div class="column small-3">' + formatFloat(status.weather.main.humidity) + '%</div>' +
+									'<div class="column small-3">' + formatTime(time-status.weather.dt) + '</div>' +
+									'</div>';
+							}
 							roomDiv.html(body);
 						}
 					}, error: function(xhr, text) {

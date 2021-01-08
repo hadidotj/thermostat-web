@@ -42,9 +42,15 @@ if($intent == 'CurrentTemperatureIntent') {
         $speak = 'The average temperature is ' . ($status['avgTmp']) . ' degrees.';
     }
 } else if($intent == 'SetTemperatureIntent') {
-    $newtmp = $slots['newtmp']['value'];
-    sendCmd('setTmp,' . $newtmp);
-    $speak = 'Ok';
+    $newtmp = intval($slots['newtmp']['value']);
+	if($newtmp >= 50 && $newtmp <= 90) {
+		sendCmd('setTmp,' . $newtmp);
+		$speak = 'Ok';
+	} else if ($newtmp >= 90) {
+		$speak = $newtmp . ' degrees is too hot.';
+	} else {
+		$speak = $newtmp . ' degrees is too cold.';
+	}
 } else {
     $speak = 'Sorry, I am unsure of your intent.';
 }
